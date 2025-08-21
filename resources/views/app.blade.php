@@ -33,9 +33,6 @@
 
 <!-- Legacy JS files that depend on jQuery -->
 <script src="{{ asset('asset/js/main.js') }}"></script>
-<script src="{{ asset('asset/js/select2.min.js') }}"></script>
-<script src="{{ asset('asset/js/select2-custom.js') }}"></script>
-
 
 {{-- {{-- For chart Only --}}
 {{-- <script src="{{ asset('asset/js/index.js') }}"></script> --}}

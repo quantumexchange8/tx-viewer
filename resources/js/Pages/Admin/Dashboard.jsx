@@ -32,40 +32,38 @@ export default function Dashboard({ teams, transactions }) {
                     teamTransactions[year] = {};
                 }
 
-                teamTransactions[year][team.name] = filtered;
-                deposit[team.name] = 0;
-                withdrawal[team.name] = 0;
-                balance[team.name] = 1000.0;
-                cost[team.name] = 0;
-                net[team.name] = 0;
+                teamTransactions[year][team.id] = filtered;
+                deposit[team.id] = 0;
+                withdrawal[team.id] = 0;
+                balance[team.id] = 1000.0;
+                cost[team.id] = 0;
+                net[team.id] = 0;
 
                 filtered.forEach((row) => {
                     if (row.transaction_type === "deposit") {
-                        deposit[team.name] += parseFloat(
-                            row.transaction_amount
-                        );
+                        deposit[team.id] += parseFloat(row.transaction_amount);
                     } else if (row.transaction_type === "withdrawal") {
-                        withdrawal[team.name] += parseFloat(
+                        withdrawal[team.id] += parseFloat(
                             row.transaction_amount
                         );
                     }
                 });
 
                 // format deposit & withdrawal to 2 decimals
-                deposit[team.name] = Math.round(deposit[team.name] * 100) / 100;
-                withdrawal[team.name] =
-                    Math.round(withdrawal[team.name] * 100) / 100;
+                deposit[team.id] = Math.round(deposit[team.id] * 100) / 100;
+                withdrawal[team.id] =
+                    Math.round(withdrawal[team.id] * 100) / 100;
 
-                cost[team.name] =
-                    Math.round((percentage / 100) * deposit[team.name] * 100) /
+                cost[team.id] =
+                    Math.round((percentage / 100) * deposit[team.id] * 100) /
                     100;
 
-                net[team.name] =
+                net[team.id] =
                     Math.round(
-                        (deposit[team.name] +
-                            balance[team.name] -
-                            cost[team.name] -
-                            withdrawal[team.name]) *
+                        (deposit[team.id] +
+                            balance[team.id] -
+                            cost[team.id] -
+                            withdrawal[team.id]) *
                             100
                     ) / 100;
             }
@@ -91,24 +89,24 @@ export default function Dashboard({ teams, transactions }) {
                         <TeamCard
                             key={team.id}
                             teamName={team.name}
-                            deposit={deposit[team.name]}
-                            withdrawal={withdrawal[team.name]}
-                            balance={balance[team.name]}
-                            cost={cost[team.name]}
-                            net={net[team.name]}
+                            deposit={deposit[team.id]}
+                            withdrawal={withdrawal[team.id]}
+                            balance={balance[team.id]}
+                            cost={cost[team.id]}
+                            net={net[team.id]}
                             chart={
                                 <DashboardChart
                                     isMobile={isMobile}
-                                    name={team.name}
+                                    name={team.id}
                                     data={[
-                                        { x: "Deposit", y: deposit[team.name] },
+                                        { x: "Deposit", y: deposit[team.id] },
                                         {
                                             x: "Withdrawal",
-                                            y: withdrawal[team.name],
+                                            y: withdrawal[team.id],
                                         },
-                                        { x: "Balance", y: balance[team.name] },
-                                        { x: "Cost", y: cost[team.name] },
-                                        { x: "Net", y: net[team.name] },
+                                        { x: "Balance", y: balance[team.id] },
+                                        { x: "Cost", y: cost[team.id] },
+                                        { x: "Net", y: net[team.id] },
                                     ]}
                                 />
                             }

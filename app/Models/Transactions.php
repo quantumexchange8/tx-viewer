@@ -17,6 +17,12 @@ class Transactions extends Model
         'created_at',
     ];
 
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+
     public function scopeSuccessful($query)
     {
         return $query->where(function ($q) {

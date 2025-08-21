@@ -44,7 +44,7 @@ class AdminSettings extends Model
         if (!$settings) {
             $settings = new self();
             $settings->user_id = $adminUser->id;
-            $settings->time_management = 20;
+            $settings->time_management = 35;
             $settings->access_days = json_encode([
                 'monday' => true,
                 'tuesday' => true,

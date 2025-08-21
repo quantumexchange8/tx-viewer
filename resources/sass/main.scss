@@ -1772,5 +1772,7 @@ form select.error:focus {
     bottom: 0;
     right: 2rem;
   }
-  position: relative;
+  & {
+    position: relative;
+  }
 }

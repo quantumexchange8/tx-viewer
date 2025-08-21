@@ -13,6 +13,7 @@ use App\Models\Team;
 use App\Models\User;
 use App\Models\Transactions;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 Route::get('/', function () {
     return Inertia::render('Auth/Login', [
@@ -52,6 +53,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         'transaction_type',
                         'transaction_amount',
                         'status',
+                        'created_at',
                         DB::raw('YEAR(created_at) as year'),
                         DB::raw('MONTH(created_at) as month')
                     )
@@ -156,21 +158,38 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->toArray();
                 $settings = AdminSettings::getSettings($years);
 
+                $currentLoggedInID = Auth::id();
+
+                $currentTeam = Team::where('team_account_id', $currentLoggedInID)->first();
+
                 $transactions = Transactions::successful()
+                    ->whereHas('user.teams', function ($query) use ($currentTeam) {
+                        $query->where('teams.id', $currentTeam->id);
+                    })
                     ->select(
                         'id',
                         'user_id',
+                        'from_meta_login',
+                        'to_meta_login',
                         'transaction_type',
                         'transaction_amount',
                         'status',
-                        'created_at',
-                        DB::raw('YEAR(created_at) as year'),
-                        DB::raw('MONTH(created_at) as month')
+                        'created_at'
                     )
-                    ->orderBy('year', 'desc')
-                    ->orderBy('month', 'desc')
+                    ->orderBy('created_at', 'desc')
                     ->get()
-                    ->groupBy(['year', 'month']);
+                    ->map(function ($item) {
+                        $dt = Carbon::parse($item->created_at)->timezone('Asia/Shanghai');
+                        $item->year = $dt->year;
+                        $item->month = $dt->month;
+                        return $item;
+                    })
+                    ->groupBy([
+                        fn($item) => $item->year,
+                        fn($item) => $item->month,
+                    ]);
+
+                // dd($transactions);
 
                 return Inertia::render('Team/Dashboard', [
                     'settings' => $settings,

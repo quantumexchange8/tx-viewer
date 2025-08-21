@@ -1,99 +1,83 @@
-import React from "react";
+import React, { useMemo } from "react";
 import Chart from "react-apexcharts";
+import dayjs from "dayjs";
+import "dayjs/locale/zh-tw"; // 繁體中文
 
-const DashboardChart = ({ isMobile, name, data }) => {
-    const options = {
-        chart: {
-            //width:150,
-            height: 120,
-            type: "bar",
-            sparkline: {
-                enabled: !0,
-            },
-            zoom: {
-                enabled: false,
-            },
-        },
-        dataLabels: {
-            enabled: false,
-        },
-        stroke: {
-            width: 1,
-            curve: "smooth",
-            color: ["transparent"],
-        },
-        fill: {
-            type: "gradient",
-            gradient: {
-                shade: "dark",
-                gradientToColors: ["#7928ca"],
-                shadeIntensity: 1,
-                type: "vertical",
-                opacityFrom: 1,
-                opacityTo: 1,
-                stops: [0, 100, 100, 100],
-            },
-        },
-        colors: ["#ff0080"],
-        plotOptions: {
-            bar: {
-                horizontal: false,
-                borderRadius: 4,
-                borderRadiusApplication: "around",
-                borderRadiusWhenStacked: "last",
-                columnWidth: "45%",
-            },
-        },
+dayjs.locale("zh-tw");
 
-        tooltip: {
-            theme: "dark",
-            fixed: {
-                enabled: !1,
-            },
-            x: {
-                show: !1,
-            },
-            y: {
-                title: {
-                    formatter: function (e) {
-                        return "";
+const DashboardChart = ({ isMobile, name, data, months }) => {
+    if (!months || months.length === 0) {
+        return <div></div>;
+    }
+
+    const options = useMemo(
+        () => ({
+            chart: {
+                type: "area",
+                sparkline: { enabled: true },
+                animations: {
+                    enabled: true,
+                    easing: "easeinout",
+                    speed: 1000,
+                    animateGradually: {
+                        enabled: false,
+                    },
+                    dynamicAnimation: {
+                        enabled: true,
+                        speed: 800,
                     },
                 },
             },
-            marker: {
-                show: !1,
+            stroke: {
+                width: 1.5,
+                curve: "smooth",
             },
-        },
-        xaxis: {
-            categories: [
-                "Jan",
-                "Feb",
-                "Mar",
-                "Apr",
-                "May",
-                "Jun",
-                "Jul",
-                "Aug",
-                "Sep",
-            ],
-        },
-    };
+            colors: ["#ff0080"],
+            fill: {
+                type: "gradient",
+                gradient: {
+                    shade: "dark",
+                    gradientToColors: ["#7928ca"],
+                    shadeIntensity: 1,
+                    type: "vertical",
+                    opacityFrom: 0.9,
+                    opacityTo: 0.9,
+                    stops: [0, 100],
+                },
+            },
+            dataLabels: { enabled: false },
+            xaxis: {
+                categories: months.map((month) =>
+                    dayjs(month, "YYYY-MM").format("MMM YYYY")
+                ),
+                labels: { show: true },
+            },
+            tooltip: {
+                theme: "dark",
+                x: { show: true },
+                y: { title: { formatter: () => "" } },
+                marker: { show: false },
+            },
+        }),
+        [months]
+    );
 
     const series = [
         {
             name: name,
-            data: data,
+            data: data || [],
         },
     ];
 
     return (
         <div id="chart4">
             <Chart
+                key={isMobile ? "mobile" : "desktop"} // 👈 force remount when screen size changes
                 options={options}
                 series={series}
                 type="area"
-                width={isMobile ? "80%" : "50%"}
-                height={isMobile ? "80%" : "50%"}
+                width={isMobile ? "100%" : "130px"}
+                height={isMobile ? "60px" : "80px"}
             />
         </div>
     );

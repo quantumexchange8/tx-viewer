@@ -143,9 +143,10 @@ export default function AuthenticatedLayout({ header, children, settings }) {
                                         <li className="">
                                             <Link
                                                 className="dropdown-item d-flex gap-2 align-items-center"
-                                                href={`${route(
-                                                    "admin.settings"
-                                                )}#time-management`}
+                                                href={
+                                                    route("admin.settings") +
+                                                    "#time-management"
+                                                }
                                             >
                                                 <TimeIcon />
                                                 时间管理
@@ -154,9 +155,10 @@ export default function AuthenticatedLayout({ header, children, settings }) {
                                         <li>
                                             <Link
                                                 className="dropdown-item d-flex gap-2 align-items-center"
-                                                href={`${route(
-                                                    "admin.settings"
-                                                )}#access-management`}
+                                                href={
+                                                    route("admin.settings") +
+                                                    "#access-management"
+                                                }
                                             >
                                                 <AccessIcon />
                                                 开放权限
@@ -165,9 +167,10 @@ export default function AuthenticatedLayout({ header, children, settings }) {
                                         <li>
                                             <Link
                                                 className="dropdown-item d-flex gap-2 align-items-center"
-                                                href={`${route(
-                                                    "admin.settings"
-                                                )}#display-management`}
+                                                href={
+                                                    route("admin.settings") +
+                                                    "#display-management"
+                                                }
                                             >
                                                 <DisplayIcon />
                                                 显示权限
