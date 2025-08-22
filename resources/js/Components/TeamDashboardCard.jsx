@@ -11,7 +11,11 @@ export default function TeamDashboardCard({ title, amount, chart, icon }) {
                             <div className="d-flex flex-column flex-lg-row align-items-center justify-content-between">
                                 <div className="d-flex flex-column justify-content-end h-100">
                                     <h3 className="mb-0 text-indigo">
-                                        ${amount}
+                                        {Number(amount) < 0
+                                            ? `-$${Math.abs(
+                                                  Number(amount)
+                                              ).toFixed(2)}`
+                                            : `$${Number(amount).toFixed(2)}`}
                                     </h3>
                                     <p>总数</p>
                                 </div>
@@ -34,7 +38,13 @@ export default function TeamDashboardCard({ title, amount, chart, icon }) {
                         </div>
                         <div className="d-flex flex-column flex-lg-row align-items-center justify-content-between">
                             <div className="d-flex flex-column justify-content-end">
-                                <h4 className="mb-2">${amount}</h4>
+                                <h4 className="mb-2">
+                                    {Number(amount) < 0
+                                        ? `-$${Math.abs(Number(amount)).toFixed(
+                                              2
+                                          )}`
+                                        : `$${Number(amount).toFixed(2)}`}
+                                </h4>
                                 <p className="mb-3">{title}</p>
                             </div>
                             {chart}

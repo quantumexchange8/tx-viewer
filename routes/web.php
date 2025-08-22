@@ -43,31 +43,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     },
                 ])->get();
 
-                $currentYear = now()->year;
-                $currentMonth = now()->month;
-
-                $transactionsByYearMonth = Transactions::successful()
-                    ->select(
-                        'id',
-                        'user_id',
-                        'transaction_type',
-                        'transaction_amount',
-                        'status',
-                        'created_at',
-                        DB::raw('YEAR(created_at) as year'),
-                        DB::raw('MONTH(created_at) as month')
-                    )
-                    ->whereYear('created_at', $currentYear)
-                    ->whereMonth('created_at', $currentMonth)
+                $years = Transactions::successful()
+                    // ->whereYear('created_at', '>=', 2025)
+                    ->select(DB::raw('DISTINCT YEAR(created_at) as year'))
                     ->orderBy('year', 'desc')
-                    ->get()
-                    ->groupBy('month');
+                    ->pluck('year')
+                    ->toArray();
+
+                $settings = AdminSettings::getSettings($years);
+
+                $transactionsByYearMonth = Transactions::getAllTransactions();
 
                 return Inertia::render('Admin/Dashboard', [
                     'teams' => $teams,
                     'transactions' => $transactionsByYearMonth,
+                    'settings' => $settings,
+                    'years' => $years,
                 ]);
             })->name('dashboard');
+
+            Route::get('/team/{team}', [TransactionController::class, 'adminDashboardDetails'])
+                ->name('adminDashboardDetails');
+
 
             Route::get('/settings', function () {
                 $years = Transactions::successful()
@@ -162,32 +159,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
                 $currentTeam = Team::where('team_account_id', $currentLoggedInID)->first();
 
-                $transactions = Transactions::successful()
-                    ->whereHas('user.teams', function ($query) use ($currentTeam) {
-                        $query->where('teams.id', $currentTeam->id);
-                    })
-                    ->select(
-                        'id',
-                        'user_id',
-                        'from_meta_login',
-                        'to_meta_login',
-                        'transaction_type',
-                        'transaction_amount',
-                        'status',
-                        'created_at'
-                    )
-                    ->orderBy('created_at', 'desc')
-                    ->get()
-                    ->map(function ($item) {
-                        $dt = Carbon::parse($item->created_at)->timezone('Asia/Shanghai');
-                        $item->year = $dt->year;
-                        $item->month = $dt->month;
-                        return $item;
-                    })
-                    ->groupBy([
-                        fn($item) => $item->year,
-                        fn($item) => $item->month,
-                    ]);
+                $transactions = Transactions::getTeamTransactions($currentTeam->id);
 
                 // dd($transactions);
 

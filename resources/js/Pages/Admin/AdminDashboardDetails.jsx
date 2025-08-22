@@ -28,6 +28,16 @@ export default function Dashboard({ settings, years, transactions }) {
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1;
 
+    const [summary, setSummary] = useState({
+        deposit: 0,
+        withdrawal: 0,
+        cost: 0,
+        balance: 1000,
+        net: 1000,
+    });
+
+    const { deposit, withdrawal, cost, balance, net } = summary;
+
     const monthMap = {
         1: "一月",
         2: "二月",
@@ -157,16 +167,6 @@ export default function Dashboard({ settings, years, transactions }) {
         },
     ];
 
-    const [summary, setSummary] = useState({
-        deposit: 0,
-        withdrawal: 0,
-        cost: 0,
-        balance: 1000,
-        net: 1000,
-    });
-
-    const { deposit, withdrawal, cost, balance, net } = summary;
-
     const customStyles = {
         control: (provided, state) => ({
             ...provided,
@@ -210,59 +210,6 @@ export default function Dashboard({ settings, years, transactions }) {
         }),
     };
 
-    const yearOptions = Object.keys(displayManagement)
-        .sort((a, b) => b - a)
-        .map((year) => {
-            const months = displayManagement[year] || {};
-            const allDisabled = Object.values(months).every(
-                (value) => value === false
-            );
-
-            return {
-                value: year,
-                label: year,
-                isDisabled: allDisabled,
-            };
-        });
-
-    const monthOptions = Object.keys(displayManagement[yearSelected] || {}).map(
-        (monthNum) => ({
-            value: monthNum,
-            label: monthMap[monthNum],
-            isDisabled:
-                displayManagement[yearSelected][monthNum] == false ||
-                (yearSelected == currentYear && monthNum > currentMonth),
-        })
-    );
-
-    const filteredTransactions = applyDisplayManagement(
-        transactions,
-        displayManagement
-    );
-
-    function applyDisplayManagement(transactions, displayManagement) {
-        const result = {};
-
-        Object.entries(transactions).forEach(([year, months]) => {
-            result[year] = {};
-
-            Object.entries(months).forEach(([month, records]) => {
-                // if disabled → replace all amounts with 0
-                if (displayManagement?.[year]?.[month] === false) {
-                    result[year][month] = records.map((r) => ({
-                        ...r,
-                        transaction_amount: 0,
-                    }));
-                } else {
-                    // otherwise keep original
-                    result[year][month] = records;
-                }
-            });
-        });
-
-        return result;
-    }
-
     const calculateStats = (year, month) => {
         let deposit = 0,
             withdrawal = 0,
@@ -270,7 +217,7 @@ export default function Dashboard({ settings, years, transactions }) {
             net = 0,
             balance = 1000;
 
-        const filtered = filteredTransactions?.[year]?.[month] || [];
+        const filtered = transactions?.[year]?.[month] || [];
 
         filtered.forEach((row) => {
             if (row.transaction_type === "deposit") {
@@ -292,6 +239,23 @@ export default function Dashboard({ settings, years, transactions }) {
         };
     };
 
+    const yearOptions = Object.keys(displayManagement)
+        .sort((a, b) => b - a)
+        .map((year) => {
+            return {
+                value: year,
+                label: year,
+            };
+        });
+
+    const monthOptions = Object.keys(displayManagement[yearSelected] || {}).map(
+        (monthNum) => ({
+            value: monthNum,
+            label: monthMap[monthNum],
+            isDisabled: yearSelected == currentYear && monthNum > currentMonth,
+        })
+    );
+
     useEffect(() => {
         if (settings) {
             setDisplayManagement(JSON.parse(settings.display_management));
@@ -301,16 +265,7 @@ export default function Dashboard({ settings, years, transactions }) {
     useEffect(() => {
         // Make sure latest year is selected as default, if latest year is disabeld, select the next available year
         if (years && years.length > 0) {
-            const validYear = years.find((year) => {
-                const months = displayManagement?.[year] || {};
-                const anyEnabled = Object.values(months).some(
-                    (value) => value === true
-                );
-                return anyEnabled;
-            });
-
-            const newYear = validYear || years[0];
-            setYearSelected(newYear);
+            setYearSelected(years[0]);
         }
     }, [years, displayManagement]);
 
@@ -323,12 +278,10 @@ export default function Dashboard({ settings, years, transactions }) {
 
         if (yearSelected == currentYear) {
             enabledMonths = Object.keys(months)
-                .filter((m) => months[m] && parseInt(m) <= currentMonth)
+                .filter((m) => parseInt(m) <= currentMonth)
                 .map((m) => parseInt(m));
         } else {
-            enabledMonths = Object.keys(months)
-                .filter((m) => months[m])
-                .map((m) => parseInt(m));
+            enabledMonths = Object.keys(months).map((m) => parseInt(m));
         }
 
         if (enabledMonths.length === 0) {
@@ -342,6 +295,14 @@ export default function Dashboard({ settings, years, transactions }) {
         // if current month isn’t valid for this year, pick last available
         if (!enabledMonths.includes(activeMonth)) {
             const lastMonth = Math.max(...enabledMonths);
+
+            console.log(
+                "month: ",
+                enabledMonths,
+                lastMonth,
+                lastMonth,
+                activeMonth
+            );
 
             // ✅ only update if truly different
             if (lastMonth !== monthSelected) {
@@ -379,8 +340,6 @@ export default function Dashboard({ settings, years, transactions }) {
             results.net.push(stats.net);
         }
 
-        console.log("year & month selected: ", monthSelected, yearSelected);
-
         setChartData({
             deposit: results.deposit,
             withdrawal: results.withdrawal,
@@ -390,15 +349,10 @@ export default function Dashboard({ settings, years, transactions }) {
             months: results.months,
         });
 
-        if (
-            displayManagement?.[yearSelected]?.[activeMonth] === true &&
-            filteredTransactions?.[yearSelected]?.[activeMonth]
-        ) {
+        if (transactions?.[yearSelected]?.[activeMonth]) {
             const currentStats = calculateStats(yearSelected, activeMonth);
 
-            setTransactionSelected(
-                filteredTransactions[yearSelected][activeMonth]
-            );
+            setTransactionSelected(transactions[yearSelected][activeMonth]);
             setSummary(currentStats);
         } else {
             setTransactionSelected([]);
@@ -413,7 +367,12 @@ export default function Dashboard({ settings, years, transactions }) {
         }
     }, [yearSelected, monthSelected]);
 
-    console.log("summary: ", summary, filteredTransactions);
+    console.log(
+        "month: ",
+        monthSelected,
+        yearSelected,
+        transactions?.[yearSelected]?.[monthSelected]
+    );
 
     return (
         <>
@@ -526,10 +485,6 @@ export default function Dashboard({ settings, years, transactions }) {
 
                 <div className="d-none d-lg-flex flex-row flex-wrap gap-2 justify-content-end mb-3">
                     {Object.keys(displayManagement).map((year) => {
-                        const allMonthsDisabled = Object.values(
-                            displayManagement[year] || {}
-                        ).every((value) => value === false);
-
                         return (
                             <button
                                 key={year}
@@ -540,7 +495,6 @@ export default function Dashboard({ settings, years, transactions }) {
                                         : ""
                                 }`}
                                 onClick={() => setYearSelected(Number(year))}
-                                disabled={allMonthsDisabled}
                             >
                                 {year}
                             </button>
@@ -557,20 +511,13 @@ export default function Dashboard({ settings, years, transactions }) {
                                     type="button"
                                     className={`btn text-nowrap flex-fill ${
                                         String(monthNum) ==
-                                            String(monthSelected) &&
-                                        displayManagement[yearSelected][
-                                            monthNum
-                                        ] == true
+                                        String(monthSelected)
                                             ? "btn-info"
                                             : "btn-outline-info"
                                     }`}
                                     disabled={
-                                        (displayManagement[yearSelected][
-                                            monthNum
-                                        ] == false ||
-                                            (currentYear == yearSelected &&
-                                                currentMonth < monthNum)) &&
-                                        true
+                                        currentYear == yearSelected &&
+                                        currentMonth < monthNum
                                     }
                                     onClick={() =>
                                         setMonthSelected(Number(monthNum))

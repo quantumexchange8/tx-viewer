@@ -18,28 +18,25 @@ export default function TeamCard({
                         <div className="row">
                             <div className="col-12 col-lg-2 align-items-center d-flex flex-column flex-lg-column-reverse">
                                 <h4 className="mb-0 text-indigo">
-                                    $
-                                    {deposit
-                                        ? deposit.toFixed(2)
-                                        : (0.0).toFixed(2)}
+                                    {deposit < 0
+                                        ? `-$${Math.abs(deposit).toFixed(2)}`
+                                        : `$${deposit.toFixed(2)}`}{" "}
                                 </h4>
                                 <p className="text-center">存款</p>
                             </div>
                             <div className="col-12 col-lg-2 align-items-center d-flex flex-column flex-lg-column-reverse">
                                 <h4 className="mb-0 text-indigo">
-                                    $
-                                    {withdrawal
-                                        ? withdrawal.toFixed(2)
-                                        : (0.0).toFixed(2)}
+                                    {withdrawal < 0
+                                        ? `-$${Math.abs(withdrawal).toFixed(2)}`
+                                        : `$${withdrawal.toFixed(2)}`}{" "}
                                 </h4>
                                 <p className="text-center">提款</p>
                             </div>
                             <div className="col-12 col-lg-2 align-items-center d-flex flex-column flex-lg-column-reverse">
                                 <h4 className="mb-0 text-indigo">
-                                    $
-                                    {balance
-                                        ? balance.toFixed(2)
-                                        : (0.0).toFixed(2)}
+                                    {balance < 0
+                                        ? `-$${Math.abs(balance).toFixed(2)}`
+                                        : `$${balance.toFixed(2)}`}{" "}
                                 </h4>
                                 <p className="text-center">当月余额</p>
                             </div>
@@ -51,7 +48,9 @@ export default function TeamCard({
                             </div>
                             <div className="col-12 col-lg-2 align-items-center d-flex flex-column flex-lg-column-reverse">
                                 <h4 className="mb-0 text-indigo">
-                                    ${net ? net.toFixed(2) : (0.0).toFixed(2)}
+                                    {net < 0
+                                        ? `-$${Math.abs(net).toFixed(2)}`
+                                        : `$${net.toFixed(2)}`}{" "}
                                 </h4>
                                 <p className="text-center">净值余额</p>
                             </div>

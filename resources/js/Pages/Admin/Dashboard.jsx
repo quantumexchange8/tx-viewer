@@ -1,116 +1,269 @@
-import { DashboardChart } from "@/Components/Chart";
+import { AdminDashboardChart } from "@/Components/Chart";
 import TeamCard from "@/Components/AdminDashboardCard";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head } from "@inertiajs/react";
+import { Head, Link } from "@inertiajs/react";
 import { useMediaQuery } from "react-responsive";
+import { useEffect, useMemo, useState } from "react";
+import Select from "react-select";
 
-export default function Dashboard({ teams, transactions }) {
+export default function Dashboard({ years, settings, teams, transactions }) {
     const isMobile = useMediaQuery({ query: "(max-width: 991px)" });
 
-    console.log(teams, transactions, isMobile);
+    const [yearSelected, setYearSelected] = useState("");
+    const [monthSelected, setMonthSelected] = useState("");
+    const [transactionSelected, setTransactionSelected] = useState([]);
+    const [displayManagement, setDisplayManagement] = useState([]);
 
-    let teamTransactions = {};
-    let deposit = {},
-        withdrawal = {},
-        balance = {},
-        cost = {},
-        net = {};
-    const percentage = 10;
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
 
-    Object.keys(transactions).map((year) => {
-        teams.forEach((team) => {
-            // Filter transactions that match any user_id in this team
-            const filtered = transactions[year].filter((transaction) =>
-                team.team_has_users.some(
-                    (u) => u.user_id === transaction.user_id
-                )
-            );
+    const monthMap = {
+        1: "一月",
+        2: "二月",
+        3: "三月",
+        4: "四月",
+        5: "五月",
+        6: "六月",
+        7: "七月",
+        8: "八月",
+        9: "九月",
+        10: "十月",
+        11: "十一月",
+        12: "十二月",
+    };
 
-            if (filtered.length > 0) {
-                // Store grouped by year + team
-                if (!teamTransactions[year]) {
-                    teamTransactions[year] = {};
-                }
+    const customStyles = {
+        control: (provided, state) => ({
+            ...provided,
+            backgroundColor: "#0f1535",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
+            borderRadius: "8px",
+            color: "#fff",
+            boxShadow: state.isFocused
+                ? "0 0 0 1px rgba(255,255,255,0.25)"
+                : "none",
+            "&:hover": {
+                borderColor: "rgba(255, 255, 255, 0.25)",
+            },
+        }),
+        singleValue: (provided) => ({
+            ...provided,
+            color: "#fff",
+        }),
+        menu: (provided) => ({
+            ...provided,
+            backgroundColor: "#0f1535",
+            borderRadius: "8px",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
+            overflow: "hidden",
+        }),
+        option: (provided, state) => ({
+            ...provided,
+            backgroundColor: state.isFocused
+                ? "rgba(255,255,255,0.1)"
+                : "#0f1535",
+            color: state.isDisabled ? "#737373ff" : "#fff", // gray text if disabled
+            cursor: "pointer",
+        }),
+        input: (provided) => ({
+            ...provided,
+            color: "#fff",
+        }),
+        placeholder: (provided) => ({
+            ...provided,
+            color: "rgba(255,255,255,0.5)",
+        }),
+    };
 
-                teamTransactions[year][team.id] = filtered;
-                deposit[team.id] = 0;
-                withdrawal[team.id] = 0;
-                balance[team.id] = 1000.0;
-                cost[team.id] = 0;
-                net[team.id] = 0;
+    const yearOptions = Object.keys(displayManagement)
+        .sort((a, b) => b - a)
+        .map((year) => {
+            const months = displayManagement[year] || {};
 
-                filtered.forEach((row) => {
-                    if (row.transaction_type === "deposit") {
-                        deposit[team.id] += parseFloat(row.transaction_amount);
-                    } else if (row.transaction_type === "withdrawal") {
-                        withdrawal[team.id] += parseFloat(
-                            row.transaction_amount
-                        );
-                    }
-                });
-
-                // format deposit & withdrawal to 2 decimals
-                deposit[team.id] = Math.round(deposit[team.id] * 100) / 100;
-                withdrawal[team.id] =
-                    Math.round(withdrawal[team.id] * 100) / 100;
-
-                cost[team.id] =
-                    Math.round((percentage / 100) * deposit[team.id] * 100) /
-                    100;
-
-                net[team.id] =
-                    Math.round(
-                        (deposit[team.id] +
-                            balance[team.id] -
-                            cost[team.id] -
-                            withdrawal[team.id]) *
-                            100
-                    ) / 100;
-            }
+            return {
+                value: year,
+                label: year,
+            };
         });
-    });
 
-    console.log(
-        "money: ",
-        deposit,
-        withdrawal,
-        balance,
-        cost,
-        net,
-        teamTransactions
+    const monthOptions = Object.keys(displayManagement[yearSelected] || {}).map(
+        (monthNum) => ({
+            value: monthNum,
+            label: monthMap[monthNum],
+            isDisabled: yearSelected == currentYear && monthNum > currentMonth,
+        })
     );
+
+    const teamStats = useMemo(() => {
+        if (!teams || teams.length === 0) return {};
+
+        const result = {};
+
+        teams.forEach((team) => {
+            const teamID = team.id;
+            const records =
+                transactions?.[teamID]?.[yearSelected]?.[monthSelected] || [];
+
+            let deposit = 0,
+                withdrawal = 0,
+                cost = 0,
+                net = 0,
+                balance = 1000;
+
+            records.forEach((row) => {
+                if (row.transaction_type === "deposit") {
+                    deposit += parseFloat(row.transaction_amount);
+                } else if (row.transaction_type === "withdrawal") {
+                    withdrawal += parseFloat(row.transaction_amount);
+                }
+            });
+
+            cost = 0.1 * deposit;
+            net = deposit + balance - cost - withdrawal;
+
+            // format all to 2 decimal places
+            deposit = Number(deposit.toFixed(2));
+            withdrawal = Number(withdrawal.toFixed(2));
+            cost = Number(cost.toFixed(2));
+            net = Number(net.toFixed(2));
+            balance = Number(balance.toFixed(2));
+
+            result[teamID] = {
+                team,
+                deposit,
+                withdrawal,
+                cost,
+                balance,
+                net,
+            };
+        });
+
+        return result;
+    }, [transactions, teams, yearSelected, monthSelected]);
+
+    console.log("teamStats: ", teamStats);
+
+    useEffect(() => {
+        if (settings) {
+            setDisplayManagement(JSON.parse(settings.display_management));
+        }
+    }, [settings]);
+
+    useEffect(() => {
+        if (years && years.length > 0) {
+            setYearSelected(years[0]);
+        }
+    }, [years]);
+
+    useEffect(() => {
+        const months = displayManagement?.[yearSelected] || {};
+        let enabledMonths;
+        if (yearSelected == currentYear) {
+            enabledMonths = Object.keys(months)
+                .filter((m) => parseInt(m) <= currentMonth)
+                .map((m) => parseInt(m));
+        } else {
+            enabledMonths = Object.keys(months).map((m) => parseInt(m));
+        }
+
+        if (enabledMonths.length > 0) {
+            const lastMonth = Math.max(...enabledMonths);
+
+            setMonthSelected(lastMonth);
+        }
+    }, [yearSelected]);
+
+    console.log("transactions: ", transactions);
 
     return (
         <>
             <AuthenticatedLayout>
                 <Head title="Admin Dashboard" />
-                <div className="row">
-                    {teams.map((team) => (
-                        <TeamCard
-                            key={team.id}
-                            teamName={team.name}
-                            deposit={deposit[team.id]}
-                            withdrawal={withdrawal[team.id]}
-                            balance={balance[team.id]}
-                            cost={cost[team.id]}
-                            net={net[team.id]}
-                            chart={
-                                <DashboardChart
-                                    isMobile={isMobile}
-                                    name={team.id}
-                                    data={[
-                                        { x: "Deposit", y: deposit[team.id] },
-                                        {
-                                            x: "Withdrawal",
-                                            y: withdrawal[team.id],
-                                        },
-                                        { x: "Balance", y: balance[team.id] },
-                                        { x: "Cost", y: cost[team.id] },
-                                        { x: "Net", y: net[team.id] },
-                                    ]}
-                                />
+                <div className="d-flex justify-content-start gap-3">
+                    <div className="w-auto">
+                        <Select
+                            options={yearOptions}
+                            value={
+                                yearOptions.length > 0
+                                    ? yearOptions.find(
+                                          (o) =>
+                                              String(o.value) ===
+                                              String(yearSelected)
+                                      ) || null
+                                    : null
                             }
+                            onChange={(opt) => setYearSelected(opt.value)}
+                            styles={customStyles}
+                            placeholder="选择年份"
                         />
+                    </div>
+
+                    <div className="w-auto">
+                        <Select
+                            options={monthOptions}
+                            value={
+                                monthOptions.length > 0
+                                    ? monthOptions.find(
+                                          (o) =>
+                                              String(o.value) ===
+                                              String(monthSelected)
+                                      ) || null
+                                    : null
+                            }
+                            onChange={(opt) => setMonthSelected(opt.value)}
+                            styles={customStyles}
+                            placeholder="选择月份"
+                        />
+                    </div>
+                </div>
+
+                <div className="row mt-4">
+                    {teams.map((team) => (
+                        <Link
+                            href={route("admin.adminDashboardDetails", {
+                                team: team.id,
+                            })}
+                            key={team.id}
+                        >
+                            <TeamCard
+                                key={team.id}
+                                teamName={team.name}
+                                deposit={teamStats[team.id].deposit}
+                                withdrawal={teamStats[team.id].withdrawal}
+                                balance={teamStats[team.id].balance}
+                                cost={teamStats[team.id].cost}
+                                net={teamStats[team.id].net}
+                                chart={
+                                    <AdminDashboardChart
+                                        isMobile={isMobile}
+                                        name={team.name}
+                                        data={[
+                                            {
+                                                x: "存款",
+                                                y: teamStats[team.id].deposit,
+                                            },
+                                            {
+                                                x: "提款",
+                                                y: teamStats[team.id]
+                                                    .withdrawal,
+                                            },
+                                            {
+                                                x: "当月余额",
+                                                y: teamStats[team.id].balance,
+                                            },
+                                            {
+                                                x: "维护费用",
+                                                y: teamStats[team.id].cost,
+                                            },
+                                            {
+                                                x: "净值余额",
+                                                y: teamStats[team.id].net,
+                                            },
+                                        ]}
+                                    />
+                                }
+                            />
+                        </Link>
                     ))}
                 </div>
             </AuthenticatedLayout>
