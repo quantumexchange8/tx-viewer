@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Transactions;
 use Illuminate\Support\Facades\DB;
 use App\Models\AdminSettings;
+use App\Models\Team;
+
 
 class TransactionController extends Controller
 {
@@ -20,12 +23,34 @@ class TransactionController extends Controller
             ->toArray();
         $settings = AdminSettings::getSettings($years);
 
-        $transactions = Transactions::getTeamTransactions($id);
-
         return Inertia::render('Admin/AdminDashboardDetails', [
             'settings' => $settings,
             'years' => $years,
-            'transactions' => $transactions,
+            'id' => $id
         ]);
+    }
+
+    public function getTransactions()
+    {
+        $currentLoggedInID = Auth::id();
+
+        $currentTeam = Team::where('team_account_id', $currentLoggedInID)->first();
+
+        $transactions = Transactions::getTeamTransactions($currentTeam->id);
+
+        return response()->json($transactions);
+    }
+
+    public function getAllTransactions()
+    {
+        $transactions = Transactions::getAllTransactions();
+        return response()->json($transactions);
+    }
+
+    public function getTeamTransactions(Request $request)
+    {
+        $transactions = Transactions::getTeamTransactions($request->id);
+
+        return response()->json($transactions);
     }
 }

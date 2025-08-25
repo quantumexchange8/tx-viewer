@@ -12,6 +12,20 @@ use Illuminate\Support\Facades\Auth;
 
 class TeamController extends Controller
 {
+    public function getAllTeams()
+    {
+        $teams = Team::with([
+            'leader',
+            'teamHasUsers',
+            'accountUser' => function ($query) {
+                $query->select('id', 'login_id');
+            },
+        ])->get();
+
+        return response()->json($teams);
+    }
+
+
     public function addTeam(AddTeamRequest $request)
     {
         // Passed validation

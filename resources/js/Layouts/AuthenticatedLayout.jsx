@@ -207,7 +207,9 @@ export default function AuthenticatedLayout({ header, children, settings }) {
                                         <li>
                                             <Link
                                                 className="dropdown-item d-flex gap-2 align-items-center"
-                                                href="#"
+                                                href={`${route(
+                                                    "admin.transactionSettings"
+                                                )}#complete-settings`}
                                             >
                                                 <CaculatorIcon />
                                                 结账设置

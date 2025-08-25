@@ -6,11 +6,15 @@ import FormModal from "@/Components/FormModal";
 import { EditIcon, RemoveIcon } from "@/Components/Icon";
 import ConfirmationModal from "@/Components/ConfirmationModal";
 import { message } from "antd";
+import axios from "axios";
+import { LoadingOutlined } from "@ant-design/icons";
+import { Spin } from "antd";
 
-export default function TeamSettings({ teams, teamLeaderOpt }) {
+export default function TeamSettings({ teamLeaderOpt }) {
     const [isOpen, setIsOpen] = useState(false);
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
     const [selectedTeam, setSelectedTeam] = useState("");
+    const [teams, setTeams] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [isConfirm, setIsConfirm] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
@@ -132,6 +136,23 @@ export default function TeamSettings({ teams, teamLeaderOpt }) {
         clearErrors,
     } = useForm(EMPTY_FORM);
 
+    const fetchTeams = async () => {
+        setIsLoading(true);
+
+        try {
+            const response = await axios.get("/admin/getAllTeams");
+            setTeams(response.data);
+        } catch (error) {
+            console.error("error", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchTeams();
+    }, []);
+
     useEffect(() => {
         if (saved) {
             messageApi.open({
@@ -170,6 +191,7 @@ export default function TeamSettings({ teams, teamLeaderOpt }) {
                         setIsConfirm(false);
                         setSaved(true);
                         setSavedMessage("组别删除成功");
+                        fetchTeams();
                     },
                     onError: () => {
                         setErrorMessage("删除组别失败!请重试");
@@ -191,6 +213,7 @@ export default function TeamSettings({ teams, teamLeaderOpt }) {
                 setIsLoading(false);
                 setSaved(true);
                 setSavedMessage("组别添加成功");
+                fetchTeams();
                 setDefaults(EMPTY_FORM);
                 reset();
             },
@@ -210,6 +233,7 @@ export default function TeamSettings({ teams, teamLeaderOpt }) {
                 setIsLoading(false);
                 setSaved(true);
                 setSavedMessage("组别资料更改成功");
+                fetchTeams();
                 setDefaults(EMPTY_FORM);
                 reset();
             },
@@ -255,35 +279,49 @@ export default function TeamSettings({ teams, teamLeaderOpt }) {
                     <h1>设置</h1>
                     <div className="card" id="time-management">
                         <div className="card-body text-start p-4">
-                            <div className="d-flex flex-column flex-md-row align-items-lg-center justify-content-between gap-3">
-                                <h4 className="fw-bold mb-0">组别信息</h4>
-                                <button
-                                    type="button"
-                                    className="btn btn-outline-success text-nowrap align-items-center justify-content-center px-4 d-flex gap-2"
-                                    onClick={() => {
-                                        hardReset(); // empty form
-                                        setIsOpen(!isOpen);
-                                        setMode("add");
-                                    }}
-                                >
-                                    <i className="lni lni-plus"></i>
-                                    添加
-                                </button>
-                            </div>
-                            <Table
-                                className="mt-3 text-light"
-                                rowKey="id"
-                                columns={columns}
-                                dataSource={teams}
-                                pagination={{
-                                    position: ["bottomCenter"],
-                                    defaultPageSize: 8,
-                                    showQuickJumper: false,
-                                    total: teams.length,
-                                    showTotal: (total, range) =>
-                                        `显示第${range[0]}-${range[1]}项， 共${total}项`,
-                                }}
-                            />
+                            {isLoading ? (
+                                <div className="d-flex justify-content-center mt-5 gap-3">
+                                    <Spin
+                                        indicator={<LoadingOutlined spin />}
+                                        size="large"
+                                    />
+                                    <h5>載入中...</h5>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="d-flex flex-column flex-md-row align-items-lg-center justify-content-between gap-3">
+                                        <h4 className="fw-bold mb-0">
+                                            组别信息
+                                        </h4>
+                                        <button
+                                            type="button"
+                                            className="btn btn-outline-success text-nowrap align-items-center justify-content-center px-4 d-flex gap-2"
+                                            onClick={() => {
+                                                hardReset(); // empty form
+                                                setIsOpen(!isOpen);
+                                                setMode("add");
+                                            }}
+                                        >
+                                            <i className="lni lni-plus"></i>
+                                            添加
+                                        </button>
+                                    </div>
+                                    <Table
+                                        className="mt-3 text-light"
+                                        rowKey="id"
+                                        columns={columns}
+                                        dataSource={isLoading ? [] : teams}
+                                        pagination={{
+                                            position: ["bottomCenter"],
+                                            defaultPageSize: 8,
+                                            showQuickJumper: false,
+                                            total: teams.length,
+                                            showTotal: (total, range) =>
+                                                `显示第${range[0]}-${range[1]}项， 共${total}项`,
+                                        }}
+                                    />
+                                </>
+                            )}
                         </div>
                     </div>
 

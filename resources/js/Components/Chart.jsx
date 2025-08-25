@@ -76,7 +76,7 @@ const TeamDashboardChart = ({ isMobile, name, data, months }) => {
                 options={options}
                 series={series}
                 type="area"
-                width={isMobile ? "100%" : "130px"}
+                width={isMobile ? "70%" : "130px"}
                 height={isMobile ? "60px" : "80px"}
             />
         </div>
@@ -147,7 +147,7 @@ const AdminDashboardChart = ({ isMobile, teamName, data }) => {
                 options={options}
                 series={series}
                 type="area"
-                width={isMobile ? "100%" : "130px"}
+                width={isMobile ? "70%" : "130px"}
                 height={isMobile ? "60px" : "80px"}
             />
         </div>

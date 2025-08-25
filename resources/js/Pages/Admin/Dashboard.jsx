@@ -5,13 +5,18 @@ import { Head, Link } from "@inertiajs/react";
 import { useMediaQuery } from "react-responsive";
 import { useEffect, useMemo, useState } from "react";
 import Select from "react-select";
+import axios from "axios";
+import { LoadingOutlined } from "@ant-design/icons";
+import { Spin } from "antd";
 
-export default function Dashboard({ years, settings, teams, transactions }) {
+export default function Dashboard({ years, settings }) {
     const isMobile = useMediaQuery({ query: "(max-width: 991px)" });
 
+    const [isLoading, setIsLoading] = useState(true);
+    const [teams, setTeams] = useState("");
+    const [transactions, setTransactions] = useState("");
     const [yearSelected, setYearSelected] = useState("");
     const [monthSelected, setMonthSelected] = useState("");
-    const [transactionSelected, setTransactionSelected] = useState([]);
     const [displayManagement, setDisplayManagement] = useState([]);
 
     const currentYear = new Date().getFullYear();
@@ -141,7 +146,34 @@ export default function Dashboard({ years, settings, teams, transactions }) {
         return result;
     }, [transactions, teams, yearSelected, monthSelected]);
 
-    console.log("teamStats: ", teamStats);
+    const fetchTransactions = async () => {
+        setIsLoading(true);
+        try {
+            const response = await axios.get("/admin/getAllTransactions");
+            setTransactions(response.data);
+        } catch (error) {
+            console.error("error", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const fetchTeams = async () => {
+        setIsLoading(true);
+
+        try {
+            const response = await axios.get("/admin/getAllTeams");
+            setTeams(response.data);
+        } catch (error) {
+            console.error("error", error);
+        } finally {
+        }
+    };
+
+    useEffect(() => {
+        fetchTeams();
+        fetchTransactions();
+    }, []);
 
     useEffect(() => {
         if (settings) {
@@ -174,98 +206,122 @@ export default function Dashboard({ years, settings, teams, transactions }) {
     }, [yearSelected]);
 
     console.log("transactions: ", transactions);
+    console.log("teams: ", teams);
 
     return (
         <>
             <AuthenticatedLayout>
                 <Head title="Admin Dashboard" />
-                <div className="d-flex justify-content-start gap-3">
-                    <div className="w-auto">
-                        <Select
-                            options={yearOptions}
-                            value={
-                                yearOptions.length > 0
-                                    ? yearOptions.find(
-                                          (o) =>
-                                              String(o.value) ===
-                                              String(yearSelected)
-                                      ) || null
-                                    : null
-                            }
-                            onChange={(opt) => setYearSelected(opt.value)}
-                            styles={customStyles}
-                            placeholder="选择年份"
-                        />
-                    </div>
 
-                    <div className="w-auto">
-                        <Select
-                            options={monthOptions}
-                            value={
-                                monthOptions.length > 0
-                                    ? monthOptions.find(
-                                          (o) =>
-                                              String(o.value) ===
-                                              String(monthSelected)
-                                      ) || null
-                                    : null
-                            }
-                            onChange={(opt) => setMonthSelected(opt.value)}
-                            styles={customStyles}
-                            placeholder="选择月份"
+                {isLoading ? (
+                    <div className="d-flex justify-content-center mt-5 gap-3">
+                        <Spin
+                            indicator={<LoadingOutlined spin />}
+                            size="large"
                         />
+                        <h5>載入中...</h5>
                     </div>
-                </div>
+                ) : (
+                    <>
+                        <div className="d-flex justify-content-start gap-3">
+                            <div className="w-auto">
+                                <Select
+                                    options={yearOptions}
+                                    value={
+                                        yearOptions.length > 0
+                                            ? yearOptions.find(
+                                                  (o) =>
+                                                      String(o.value) ===
+                                                      String(yearSelected)
+                                              ) || null
+                                            : null
+                                    }
+                                    onChange={(opt) =>
+                                        setYearSelected(opt.value)
+                                    }
+                                    styles={customStyles}
+                                    placeholder="选择年份"
+                                />
+                            </div>
 
-                <div className="row mt-4">
-                    {teams.map((team) => (
-                        <Link
-                            href={route("admin.adminDashboardDetails", {
-                                team: team.id,
-                            })}
-                            key={team.id}
-                        >
-                            <TeamCard
-                                key={team.id}
-                                teamName={team.name}
-                                deposit={teamStats[team.id].deposit}
-                                withdrawal={teamStats[team.id].withdrawal}
-                                balance={teamStats[team.id].balance}
-                                cost={teamStats[team.id].cost}
-                                net={teamStats[team.id].net}
-                                chart={
-                                    <AdminDashboardChart
-                                        isMobile={isMobile}
-                                        name={team.name}
-                                        data={[
-                                            {
-                                                x: "存款",
-                                                y: teamStats[team.id].deposit,
-                                            },
-                                            {
-                                                x: "提款",
-                                                y: teamStats[team.id]
-                                                    .withdrawal,
-                                            },
-                                            {
-                                                x: "当月余额",
-                                                y: teamStats[team.id].balance,
-                                            },
-                                            {
-                                                x: "维护费用",
-                                                y: teamStats[team.id].cost,
-                                            },
-                                            {
-                                                x: "净值余额",
-                                                y: teamStats[team.id].net,
-                                            },
-                                        ]}
+                            <div className="w-auto">
+                                <Select
+                                    options={monthOptions}
+                                    value={
+                                        monthOptions.length > 0
+                                            ? monthOptions.find(
+                                                  (o) =>
+                                                      String(o.value) ===
+                                                      String(monthSelected)
+                                              ) || null
+                                            : null
+                                    }
+                                    onChange={(opt) =>
+                                        setMonthSelected(Number(opt.value))
+                                    }
+                                    styles={customStyles}
+                                    placeholder="选择月份"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="row mt-4">
+                            {teams.map((team) => (
+                                <Link
+                                    href={route("admin.adminDashboardDetails", {
+                                        team: team.id,
+                                    })}
+                                    key={team.id}
+                                >
+                                    <TeamCard
+                                        key={team.id}
+                                        teamName={team.name}
+                                        deposit={teamStats[team.id].deposit}
+                                        withdrawal={
+                                            teamStats[team.id].withdrawal
+                                        }
+                                        balance={teamStats[team.id].balance}
+                                        cost={teamStats[team.id].cost}
+                                        net={teamStats[team.id].net}
+                                        chart={
+                                            <AdminDashboardChart
+                                                isMobile={isMobile}
+                                                name={team.name}
+                                                data={[
+                                                    {
+                                                        x: "存款",
+                                                        y: teamStats[team.id]
+                                                            .deposit,
+                                                    },
+                                                    {
+                                                        x: "提款",
+                                                        y: teamStats[team.id]
+                                                            .withdrawal,
+                                                    },
+                                                    {
+                                                        x: "当月余额",
+                                                        y: teamStats[team.id]
+                                                            .balance,
+                                                    },
+                                                    {
+                                                        x: "维护费用",
+                                                        y: teamStats[team.id]
+                                                            .cost,
+                                                    },
+                                                    {
+                                                        x: "净值余额",
+                                                        y: teamStats[team.id]
+                                                            .net,
+                                                    },
+                                                ]}
+                                            />
+                                        }
                                     />
-                                }
-                            />
-                        </Link>
-                    ))}
-                </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </>
+                )}
             </AuthenticatedLayout>
         </>
     );

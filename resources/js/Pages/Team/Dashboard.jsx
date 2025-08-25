@@ -4,15 +4,18 @@ import TeamDashboardCard from "@/Components/TeamDashboardCard";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head } from "@inertiajs/react";
 import { Table } from "antd";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useMediaQuery } from "react-responsive";
 import dayjs from "dayjs";
 import Select from "react-select";
+import axios from "axios";
 
-export default function Dashboard({ settings, years, transactions }) {
+export default function Dashboard({ settings, years }) {
     const isMobile = useMediaQuery({ query: "(max-width: 991px)" });
     const smallScreen = useMediaQuery({ query: "(max-width: 400px)" });
 
+    const [isLoading, setIsLoading] = useState(true);
+    const [transactions, setTransactions] = useState("");
     const [yearSelected, setYearSelected] = useState("");
     const [monthSelected, setMonthSelected] = useState("");
     const [transactionSelected, setTransactionSelected] = useState([]);
@@ -157,15 +160,15 @@ export default function Dashboard({ settings, years, transactions }) {
         },
     ];
 
-    const [summary, setSummary] = useState({
-        deposit: 0,
-        withdrawal: 0,
-        cost: 0,
-        balance: 1000,
-        net: 1000,
-    });
+    const [summary, setSummary] = useState({});
 
-    const { deposit, withdrawal, cost, balance, net } = summary;
+    const {
+        deposit = null,
+        withdrawal = null,
+        cost = null,
+        balance = null,
+        net = null,
+    } = summary;
 
     const customStyles = {
         control: (provided, state) => ({
@@ -234,6 +237,23 @@ export default function Dashboard({ settings, years, transactions }) {
                 (yearSelected == currentYear && monthNum > currentMonth),
         })
     );
+
+    const fetchTransactions = async () => {
+        setIsLoading(true);
+
+        try {
+            const response = await axios.get("/team/getTransactions");
+            setTransactions(response.data);
+        } catch (error) {
+            console.error("error", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchTransactions();
+    }, []);
 
     const filteredTransactions = applyDisplayManagement(
         transactions,
@@ -315,7 +335,7 @@ export default function Dashboard({ settings, years, transactions }) {
     }, [years, displayManagement]);
 
     useEffect(() => {
-        if (!yearSelected) return;
+        if (!yearSelected || !transactions) return;
 
         // find allowed months
         const months = displayManagement?.[yearSelected] || {};
@@ -411,7 +431,7 @@ export default function Dashboard({ settings, years, transactions }) {
                 net: 1000,
             });
         }
-    }, [yearSelected, monthSelected]);
+    }, [yearSelected, monthSelected, transactions]);
 
     console.log("summary: ", summary, filteredTransactions);
 
@@ -422,7 +442,7 @@ export default function Dashboard({ settings, years, transactions }) {
                 <div className="row">
                     <TeamDashboardCard
                         title="存款"
-                        amount={deposit.toFixed(2)}
+                        amount={deposit}
                         chart={
                             <TeamDashboardChart
                                 isMobile={isMobile}
@@ -431,10 +451,11 @@ export default function Dashboard({ settings, years, transactions }) {
                                 months={chartData["months"]}
                             />
                         }
+                        isLoading={isLoading}
                     />
                     <TeamDashboardCard
                         title="提款"
-                        amount={withdrawal.toFixed(2)}
+                        amount={withdrawal}
                         chart={
                             <TeamDashboardChart
                                 isMobile={isMobile}
@@ -443,10 +464,11 @@ export default function Dashboard({ settings, years, transactions }) {
                                 months={chartData["months"]}
                             />
                         }
+                        isLoading={isLoading}
                     />
                     <TeamDashboardCard
                         title="当月余额"
-                        amount={balance.toFixed(2)}
+                        amount={balance}
                         chart={
                             <TeamDashboardChart
                                 isMobile={isMobile}
@@ -455,11 +477,12 @@ export default function Dashboard({ settings, years, transactions }) {
                                 months={chartData["months"]}
                             />
                         }
+                        isLoading={isLoading}
                         icon={<BalanceIcon />}
                     />
                     <TeamDashboardCard
                         title="维护费用"
-                        amount={cost.toFixed(2)}
+                        amount={cost}
                         chart={
                             <TeamDashboardChart
                                 isMobile={isMobile}
@@ -468,12 +491,13 @@ export default function Dashboard({ settings, years, transactions }) {
                                 months={chartData["months"]}
                             />
                         }
+                        isLoading={isLoading}
                         icon={<CostIcon />}
                     />
 
                     <TeamDashboardCard
                         title="净值余额"
-                        amount={net.toFixed(2)}
+                        amount={net}
                         chart={
                             <TeamDashboardChart
                                 isMobile={isMobile}
@@ -482,6 +506,7 @@ export default function Dashboard({ settings, years, transactions }) {
                                 months={chartData["months"]}
                             />
                         }
+                        isLoading={isLoading}
                         icon={<NetIcon />}
                     />
                 </div>
@@ -499,7 +524,7 @@ export default function Dashboard({ settings, years, transactions }) {
                                       ) || null
                                     : null
                             }
-                            onChange={(opt) => setYearSelected(opt.value)}
+                            onChange={(opt) => setYearSelected(Number(opt.value))}
                             styles={customStyles}
                             placeholder="选择年份"
                         />
@@ -517,7 +542,9 @@ export default function Dashboard({ settings, years, transactions }) {
                                       ) || null
                                     : null
                             }
-                            onChange={(opt) => setMonthSelected(opt.value)}
+                            onChange={(opt) =>
+                                setMonthSelected(Number(opt.value))
+                            }
                             styles={customStyles}
                             placeholder="选择月份"
                         />
@@ -592,7 +619,8 @@ export default function Dashboard({ settings, years, transactions }) {
                             style={{ userSelect: "none" }}
                             columns={columns}
                             rowKey="id"
-                            dataSource={transactionSelected}
+                            loading={isLoading}
+                            dataSource={isLoading ? [] : transactionSelected}
                             pagination={{
                                 position: ["bottomCenter"],
                                 defaultPageSize: 100,
